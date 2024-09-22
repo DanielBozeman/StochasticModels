@@ -186,24 +186,42 @@ def eulerMaruyamaStochasticVol(model : SDEModel,
 
     return approximatePath
 
-def stochasticExact(model : SDEModel,
-             initialValue : float,
-             timeInterval : np.ndarray,
-             brownianPath : np.ndarray):
+def runEM(model : SDEModel,
+          initialValue : float,
+          timeDiscretization : float,
+          numSims : int,
+          intervalStart : float,
+          intervalEnd : float) -> tuple[np.ndarray, list]:
     
-    approximatePath = np.zeros(timeInterval.size)
+    approximations = []
 
-    dt = timeInterval[1] - timeInterval[0]
+    for i in range(numSims):
+        times, brownianPath = brownianPathGenerator.makePath(intervalStart, intervalEnd, timeDiscretization)
 
-    approximatePath[0] = initialValue
+        approximation = eulerMaruyama(model, initialValue, times, brownianPath)
 
-    for i in range(1,approximatePath.size):
-        prevValue = approximatePath[i-1]
-        prevTime = timeInterval[i-1]
-        dW = brownianPath[i] - brownianPath[i-1]
-        approximatePath[i] = initialValue * math.exp((model.constantsList[0] - 0.5 * model.constantsList[1] **2 )* timeInterval[i] + model.constantsList[1] * brownianPath[i])
+        approximations.append(approximation)
 
-    return approximatePath
+    return times, approximations
+
+def runEMStochasticVol(model : SDEModel,
+                       initialValue : float,
+                       timeDiscretization : float,
+                       numSims : int,
+                       intervalStart : float,
+                       intervalEnd : float,
+                       volatilityPaths : list) -> tuple[np.ndarray, list]:
+    
+    approximations = []
+
+    for i in range(numSims):
+        times, brownianPath = brownianPathGenerator.makePath(intervalStart, intervalEnd, timeDiscretization)
+
+        approximation = eulerMaruyamaStochasticVol(model, initialValue, times, brownianPath, volatilityPaths[i])
+
+        approximations.append(approximation)
+
+    return times, approximations
     
 
 if __name__ == "__main__":

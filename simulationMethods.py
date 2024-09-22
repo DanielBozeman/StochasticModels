@@ -5,6 +5,11 @@ import brownianPathGenerator
 import stochasticMethods
 from stochasticMethods import SDEModel
 
+#I envision that here every model will have a function that makes the SDEModels and then 
+#a second function that actually runs that.
+#Then in the main/another function you can just choose your model variables
+#and run the model as many times as you want.
+
 def OUProcess():
 
     theta = 0.7
@@ -39,7 +44,20 @@ def OUProcess():
 
     plt.show()
 
-#Creates the appropriate SDEModel objects for the Heston and returns them
+def cevModel(interestRate : float, volatility : float, gamma : float) -> np.ndarray:
+
+    constants = [interestRate, volatility, gamma]
+
+    def alpha(model : SDEModel, value : float, time : float) -> float:
+        return(model.constantsList[0] * value)
+    
+    def beta(model : SDEModel, value : float, time : float) -> float:
+        return(model.constantsList[1] * pow(value,gamma))
+
+    sdeModel = SDEModel(constants=constants, alphaFunction=alpha, betaFunction=beta)
+
+    return sdeModel
+
 def hestonModel(interestRate : float, longVariance : float, reversionRate : float, volOfVol : float) -> tuple[stochasticMethods.SDEModel, stochasticMethods.SDEModel]:
     """Generates SDEModel objects for the Heston model, https://en.wikipedia.org/wiki/Heston_model
 
@@ -58,16 +76,16 @@ def hestonModel(interestRate : float, longVariance : float, reversionRate : floa
     #################################################################################
     varianceConstants = [longVariance, reversionRate, volOfVol]
 
-    varianceModel = SDEModel(constants=varianceConstants)
-
     def varianceAlpha(model : SDEModel, value : float, time : float):
         return (model.constantsList[1] * (model.constantsList[0] - value))
 
     def varianceBeta(model : SDEModel, value : float, time : float):
         return (model.constantsList[2] * math.sqrt(value))
     
-    varianceModel.alphaFunction = varianceAlpha
-    varianceModel.betaFunction = varianceBeta
+    varianceModel = SDEModel(constants=varianceConstants, alphaFunction=varianceAlpha, betaFunction=varianceBeta)
+    
+    #varianceModel.alphaFunction = varianceAlpha
+    #varianceModel.betaFunction = varianceBeta
     #################################################################################
 
     #This sections defines the stock model
@@ -88,48 +106,33 @@ def hestonModel(interestRate : float, longVariance : float, reversionRate : floa
 
     return stockModel, varianceModel
 
-def runHeston(initialValue : float, initialVariance : float, stockModel : SDEModel, varianceModel : SDEModel):
-    """Runs a simulation of the Heston model and plots the results, https://en.wikipedia.org/wiki/Heston_model
-
-    Args:
-        initialValue (float): Initial stock value
-        initialVariance (float): Initial stock variance
-        stockModel (SDEModel): SDEModel for the stock value
-        varianceModel (SDEModel): SDEModel for the variance
-    """
-
-
-    interval = [0,1]
     
-    timeStep = pow(2, -10)
-
-    correlation = 0
-
-    for i in range(10):
-        times, path1, path2 = brownianPathGenerator.makeCorrelatedPaths(interval[0], interval[1], timeStep, correlation)
-
-        varianceApproximation = stochasticMethods.eulerMaruyama(varianceModel, initialVariance, times, path2)
-
-        stockApproximation = stochasticMethods.eulerMaruyamaStochasticVol(stockModel, initialValue, times, path1, varianceApproximation)
-
-        plt.plot(times, stockApproximation)
-
-    plt.show()
-
-    return()
-    
-
 if __name__ == "__main__":
 
     interestRate = 0.1
 
     initialValue = 100
+
+    timeDiscretization = pow(2,-10)
     
     reversionRate = 3.0
     longVariance = 0.2
     volOfVol = 0.1
     initialVariance = 0.1
 
+    numSims = 5
+
+    interval = [0,1]
+
     stockModel, varianceModel = hestonModel(interestRate, longVariance, reversionRate, volOfVol)
 
-    runHeston(initialValue, initialVariance, stockModel, varianceModel)
+    times, variances = stochasticMethods.runEM(varianceModel, initialVariance, timeDiscretization, numSims, interval[0], interval[1])
+
+    times, values = stochasticMethods.runEMStochasticVol(stockModel, initialValue, timeDiscretization, numSims, interval[0], interval[1], variances)
+
+    for i in range(len(variances)):
+        plt.plot(times, values[i])
+
+    plt.show()
+
+    
