@@ -40,7 +40,20 @@ def OUProcess():
     plt.show()
 
 #Creates the appropriate SDEModel objects for the Heston and returns them
-def hestonModel(interestRate : float, longVariance : float, reversionRate : float, volOfVol : float):
+def hestonModel(interestRate : float, longVariance : float, reversionRate : float, volOfVol : float) -> tuple[stochasticMethods.SDEModel, stochasticMethods.SDEModel]:
+    """Generates SDEModel objects for the Heston model, https://en.wikipedia.org/wiki/Heston_model
+
+    Args:
+        interestRate (float): Long term market interest rate
+        longVariance (float): Long term variance
+        reversionRate (float): Reversion rate of the variance
+        volOfVol (float): Volatility of the volatility
+
+    Returns:
+        tuple[stochasticMethods.SDEModel, stochasticMethods.SDEModel]: Two SDEModel object, first for the overall 
+        stock value, then for the volatility. From here generate a solution for the stochastic volatility and 
+        couple that with the stock value model to get a final approximation of stock value.
+    """
     #This section defines the vaiance model
     #################################################################################
     varianceConstants = [longVariance, reversionRate, volOfVol]
@@ -76,6 +89,15 @@ def hestonModel(interestRate : float, longVariance : float, reversionRate : floa
     return stockModel, varianceModel
 
 def runHeston(initialValue : float, initialVariance : float, stockModel : SDEModel, varianceModel : SDEModel):
+    """Runs a simulation of the Heston model and plots the results, https://en.wikipedia.org/wiki/Heston_model
+
+    Args:
+        initialValue (float): Initial stock value
+        initialVariance (float): Initial stock variance
+        stockModel (SDEModel): SDEModel for the stock value
+        varianceModel (SDEModel): SDEModel for the variance
+    """
+
 
     interval = [0,1]
     
@@ -93,6 +115,8 @@ def runHeston(initialValue : float, initialVariance : float, stockModel : SDEMod
         plt.plot(times, stockApproximation)
 
     plt.show()
+
+    return()
     
 
 if __name__ == "__main__":

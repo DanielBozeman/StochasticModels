@@ -124,7 +124,17 @@ def milstein(model : SDEModel,
       initialValue : float, 
       timeInterval : np.ndarray, 
       brownianPath : np.ndarray):
+    """Performs the Milstein method with the provided model
 
+    Args:
+        model (SDEModel): Stochastic model, make sure you've adjusted the functions
+        initialValue (float): Initial value of the SDE
+        timeInterval (np.ndarray): Time steps array, from the makePath method
+        brownianPath (np.ndarray): Brownian trajectory to approximate with
+
+    Returns:
+        np.ndarray : Approximate solution of the SDE over the trajectory supplied
+    """
     
     approximatePath = np.zeros(timeInterval.size)
 
@@ -147,8 +157,19 @@ def eulerMaruyamaStochasticVol(model : SDEModel,
            initialValue : float, 
            timeInterval : np.ndarray, 
            brownianPath : np.ndarray,
-           volatilityPath : np.ndarray):
-    
+           volatilityPath : np.ndarray) -> np.ndarray:
+    """Performs the Euler-Maruyama, but with stochastic volatility
+
+    Args:
+        model (SDEModel): Stochastic model, make sure that the beta function takes a volatility parameter
+        initialValue (float): Initial value of the SDE
+        timeInterval (np.ndarray): Time step array from makePath method
+        brownianPath (np.ndarray): Brownian trajectory to estimate with
+        volatilityPath (np.ndarray): Stochastic volatility trajectory
+
+    Returns:
+        np.ndarray: Approximation of the SDE
+    """
     approximatePath = np.zeros(timeInterval.size)
 
     dt = timeInterval[1] - timeInterval[0]
