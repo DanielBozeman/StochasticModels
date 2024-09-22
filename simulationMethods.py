@@ -106,9 +106,7 @@ def hestonModel(interestRate : float, longVariance : float, reversionRate : floa
 
     return stockModel, varianceModel
 
-    
-if __name__ == "__main__":
-
+def runHeston():
     interestRate = 0.1
 
     initialValue = 100
@@ -120,7 +118,7 @@ if __name__ == "__main__":
     volOfVol = 0.1
     initialVariance = 0.1
 
-    numSims = 5
+    numSims = 100
 
     interval = [0,1]
 
@@ -130,9 +128,21 @@ if __name__ == "__main__":
 
     times, values = stochasticMethods.runEMStochasticVol(stockModel, initialValue, timeDiscretization, numSims, interval[0], interval[1], variances)
 
-    for i in range(len(variances)):
-        plt.plot(times, values[i])
+    for i in range(50):
+        plt.plot(times, values[i], color = "gray", alpha=0.25)
+
+    averageValues = values.sum(axis=0)
+
+    averageValues = averageValues/numSims
+
+    plt.plot(times, averageValues)
 
     plt.show()
+
+    return()
+    
+if __name__ == "__main__":
+    runHeston()
+    
 
     

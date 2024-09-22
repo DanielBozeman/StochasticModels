@@ -191,7 +191,21 @@ def runEM(model : SDEModel,
           timeDiscretization : float,
           numSims : int,
           intervalStart : float,
-          intervalEnd : float) -> tuple[np.ndarray, list]:
+          intervalEnd : float) -> tuple[np.ndarray, np.ndarray]:
+    """Runs an Euler-Maruyama simulation the desired number of times
+
+    Args:
+        model (SDEModel): Model of SDE to be studied, be sure the functions have been adjusted
+        initialValue (float): Initial value of the SDE
+        timeDiscretization (float): Desired time-discretization level in the approximation
+        numSims (int): Number of simulations to perform
+        intervalStart (float): Start of the time interval
+        intervalEnd (float): End of the time interval
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]: Return tuple, first is the time series as an array, next is a list of the approximations, 
+        len(approxmations) = numSims.
+    """
     
     approximations = []
 
@@ -202,6 +216,8 @@ def runEM(model : SDEModel,
 
         approximations.append(approximation)
 
+    approximations = np.asarray(approximations)
+
     return times, approximations
 
 def runEMStochasticVol(model : SDEModel,
@@ -210,7 +226,23 @@ def runEMStochasticVol(model : SDEModel,
                        numSims : int,
                        intervalStart : float,
                        intervalEnd : float,
-                       volatilityPaths : list) -> tuple[np.ndarray, list]:
+                       volatilityPaths : list) -> tuple[np.ndarray, np.ndarray]:
+    """Performs the Euler-Maruyama simulation with stochastic volatility requested number of times.
+    Volatility should have already been calculated with the regular EM method.
+
+    Args:
+        model (SDEModel): SDE model for the final stock price
+        initialValue (float): Initial value of the SDE
+        timeDiscretization (float): Desired time=discretization level
+        numSims (int): Desired number of simulations
+        intervalStart (float): Start of the time interval
+        intervalEnd (float): End of the time interval
+        volatilityPaths (list): List of np.ndarrays, each representing a single trajectory of the volatility
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]: Return tuple, first is the time series, next is the stock approximation trajectories
+        len(approximations) = numSims
+    """
     
     approximations = []
 
@@ -220,6 +252,8 @@ def runEMStochasticVol(model : SDEModel,
         approximation = eulerMaruyamaStochasticVol(model, initialValue, times, brownianPath, volatilityPaths[i])
 
         approximations.append(approximation)
+
+    approximations = np.asarray(approximations)
 
     return times, approximations
     
