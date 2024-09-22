@@ -220,13 +220,15 @@ def runEM(model : SDEModel,
 
     return times, approximations
 
-def runEMStochasticVol(model : SDEModel,
+def runEMStochasticVol(stockModel : SDEModel,
+                       varianceModel : SDEModel,
                        initialValue : float,
+                       initialVariance : float,
                        timeDiscretization : float,
                        numSims : int,
                        intervalStart : float,
                        intervalEnd : float,
-                       volatilityPaths : list) -> tuple[np.ndarray, np.ndarray]:
+                       correlation : float) -> tuple[np.ndarray, np.ndarray]:
     """Performs the Euler-Maruyama simulation with stochastic volatility requested number of times.
     Volatility should have already been calculated with the regular EM method.
 
@@ -247,9 +249,11 @@ def runEMStochasticVol(model : SDEModel,
     approximations = []
 
     for i in range(numSims):
-        times, brownianPath = brownianPathGenerator.makePath(intervalStart, intervalEnd, timeDiscretization)
+        times, brownianPath1, brownianPath2 = brownianPathGenerator.makeCorrelatedPaths(intervalStart, intervalEnd, timeDiscretization, correlation)
 
-        approximation = eulerMaruyamaStochasticVol(model, initialValue, times, brownianPath, volatilityPaths[i])
+        variance = eulerMaruyama(varianceModel, initialVariance, times, brownianPath1)
+
+        approximation = eulerMaruyamaStochasticVol(stockModel, initialValue, times, brownianPath2, variance)
 
         approximations.append(approximation)
 

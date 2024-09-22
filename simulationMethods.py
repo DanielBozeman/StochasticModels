@@ -44,7 +44,8 @@ def OUProcess():
 
     plt.show()
 
-def cevModel(interestRate : float, volatility : float, gamma : float) -> np.ndarray:
+#Generates CEV model, note that the Milstein beta prime isn't implemented
+def CEVModel(interestRate : float, volatility : float, gamma : float) -> np.ndarray:
 
     constants = [interestRate, volatility, gamma]
 
@@ -58,6 +59,7 @@ def cevModel(interestRate : float, volatility : float, gamma : float) -> np.ndar
 
     return sdeModel
 
+#Generates Heston model, note that the Milstein beta prime isn't implemented
 def hestonModel(interestRate : float, longVariance : float, reversionRate : float, volOfVol : float) -> tuple[stochasticMethods.SDEModel, stochasticMethods.SDEModel]:
     """Generates SDEModel objects for the Heston model, https://en.wikipedia.org/wiki/Heston_model
 
@@ -72,7 +74,8 @@ def hestonModel(interestRate : float, longVariance : float, reversionRate : floa
         stock value, then for the volatility. From here generate a solution for the stochastic volatility and 
         couple that with the stock value model to get a final approximation of stock value.
     """
-    #This section defines the vaiance model
+    
+    #This section defines the variance model
     #################################################################################
     varianceConstants = [longVariance, reversionRate, volOfVol]
 
@@ -83,61 +86,90 @@ def hestonModel(interestRate : float, longVariance : float, reversionRate : floa
         return (model.constantsList[2] * math.sqrt(value))
     
     varianceModel = SDEModel(constants=varianceConstants, alphaFunction=varianceAlpha, betaFunction=varianceBeta)
-    
-    #varianceModel.alphaFunction = varianceAlpha
-    #varianceModel.betaFunction = varianceBeta
     #################################################################################
 
     #This sections defines the stock model
     #################################################################################
     stockConstants = [interestRate]
 
-    stockModel = SDEModel(constants=stockConstants)
-
     def stockAlpha(model : SDEModel, value : float, time : float):
         return(model.constantsList[0] * value)
     
     def stockBeta(model : SDEModel, value : float, time : float, volatility : float):
         return(math.sqrt(volatility) * value)
-    
-    stockModel.alphaFunction = stockAlpha
-    stockModel.betaFunction = stockBeta
+
+    stockModel = SDEModel(constants=stockConstants, alphaFunction=stockAlpha, betaFunction=stockBeta)
     #################################################################################
 
     return stockModel, varianceModel
 
-def runHeston():
-    interestRate = 0.1
+#Generates SABR model, note that Milstein beta prime isn't implemented
+def SABRModel(alpha : float, beta : float) -> tuple[np.ndarray, np.ndarray]:
 
+    #This section defines the variance model
+    #################################################################################
+    varianceConstants = [alpha]
+
+    def varianceAlpha(model : SDEModel, value : float, time : float):
+        return (0)
+
+    def varianceBeta(model : SDEModel, value : float, time : float):
+        return (model.constantsList[0] * value)
+    
+    varianceModel = SDEModel(constants=varianceConstants, alphaFunction=varianceAlpha, betaFunction=varianceBeta)
+    #################################################################################
+
+    #This sections defines the stock model
+    #################################################################################
+    stockConstants = [beta]
+
+    def stockAlpha(model : SDEModel, value : float, time : float):
+        return(0)
+    
+    def stockBeta(model : SDEModel, value : float, time : float, volatility : float):
+        return(volatility * pow(value, beta))
+
+    stockModel = SDEModel(constants=stockConstants, alphaFunction=stockAlpha, betaFunction=stockBeta)
+    #################################################################################
+
+    return stockModel, varianceModel
+
+#Runs the heston simulation
+def runHeston():
+
+    #Simulation Parameters
+    numSims = 1000
+    interval = [0,1]
+    timeDiscretization = pow(2,-10)
+    brownianCorrelation = 1
+
+    #Stock model parameters
+    interestRate = 0.1
     initialValue = 100
 
-    timeDiscretization = pow(2,-10)
-    
+    #Variance model parameters
     reversionRate = 3.0
     longVariance = 0.2
     volOfVol = 0.1
     initialVariance = 0.1
 
-    numSims = 100
+    #Plot parameters
+    numTransparent = numSims//4
 
-    interval = [0,1]
-
+    #Making model and generating approximations
     stockModel, varianceModel = hestonModel(interestRate, longVariance, reversionRate, volOfVol)
+    times, values = stochasticMethods.runEMStochasticVol(stockModel, varianceModel, initialValue, initialVariance, timeDiscretization, numSims, interval[0], interval[1], brownianCorrelation)
 
-    times, variances = stochasticMethods.runEM(varianceModel, initialVariance, timeDiscretization, numSims, interval[0], interval[1])
-
-    times, values = stochasticMethods.runEMStochasticVol(stockModel, initialValue, timeDiscretization, numSims, interval[0], interval[1], variances)
-
-    for i in range(50):
-        plt.plot(times, values[i], color = "gray", alpha=0.25)
-
+    #Finding average path
     averageValues = values.sum(axis=0)
-
     averageValues = averageValues/numSims
 
+    #Plotting paths
+    for i in range(numTransparent):
+        plt.plot(times, values[i], color = "gray", alpha=0.25)
     plt.plot(times, averageValues)
-
     plt.show()
+
 
     return()
     
