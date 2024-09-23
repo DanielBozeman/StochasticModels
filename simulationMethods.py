@@ -132,6 +132,7 @@ def SABRModel(alpha : float, beta : float) -> tuple[np.ndarray, np.ndarray]:
     stockModel = SDEModel(constants=stockConstants, alphaFunction=stockAlpha, betaFunction=stockBeta)
     #################################################################################
 
+
     return stockModel, varianceModel
 
 #Runs the heston simulation
